@@ -1,14 +1,27 @@
-
 import boto3
-
+import json
 if __name__ == "__main__":
-    fileName='input.jpg'
-    bucket='rekognition-examples-bucket'
-    
+
+    imageFile='input.jpg'
     client=boto3.client('rekognition','us-west-2')
+   
+    with open(imageFile, 'rb') as image:
+        response = client.detect_faces(Image={'Bytes': image.read()},Attributes=['ALL'])
+    
+    #print(json.dumps(response['FaceDetails'][0], indent=4, sort_keys=True))
+    print('Detected faces for ' + imageFile)
+    for faceDetail in response['FaceDetails']:
+        print('The detected face is between ' + str(faceDetail['AgeRange']['Low'])
+              + ' and ' + str(faceDetail['AgeRange']['High']) + ' years old')
+        print('Here are the other attributes:')
+        print(json.dumps(faceDetail, indent=4, sort_keys=True))
+    
 
-    response = client.detect_labels(Image={'S3Object':{'Bucket':bucket,'Name':fileName}})
+    mayorConfidence = response['FaceDetails'][0]['Emotions'][0]
+    for emotion in response['FaceDetails'][0]['Emotions']:
+        if emotion['Confidence'] >= mayorConfidence['Confidence']:
+            mayorConfidence = emotion
 
-    print('Detected labels for ' + fileName)    
-    for label in response['Labels']:
-        print (label['Name'] + ' : ' + str(label['Confidence']))
+        print(emotion, " mayor: ", mayorConfidence)
+                        
+    
